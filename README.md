@@ -28,6 +28,35 @@ fix-connector/
     └── README.md                      # Server documentation
 ```
 
+## ⚠️ Important: Test FIX Server Limitations
+
+The included FIX server (`fix-server-go`) is a **proof-of-concept for testing only** and is not production-ready.
+
+### What Works (Testing Capabilities)
+- ✅ Standard handshaking (Logon/Logout with HeartbeatInterval negotiation)
+- ✅ Basic session management and heartbeat monitoring
+- ✅ Checksum calculation and SOH delimiter parsing
+- ✅ Application logic (NewOrderSingle and ExecutionReport simulation)
+- ✅ Thread-safe sequence number management
+
+### Critical Production Gaps
+- ❌ **No Resend Management**: Server only logs sequence mismatches instead of sending ResendRequest (2) messages
+- ❌ **No Message Persistence**: Cannot fulfill ResendRequest from clients for historical messages
+- ❌ **No Dictionary Validation**: Accepts any FIX tags without FIX specification validation
+- ❌ **No Gap-Fill Logic**: Missing SequenceReset (4) handling for sequence recovery
+- ❌ **Checksum Issues**: Checksum validation disabled in sample app (`validateChecksum="false"`) due to server calculation issues
+
+### Recommendation
+**For Production Use:**
+- Deploy a production FIX engine (QuickFIX, FIX8, or commercial vendor solution)
+- Ensure proper sequence recovery, message persistence, and error handling
+- Enable checksum validation and full FIX protocol compliance
+
+**For Testing:**
+This server is sufficient to validate the connector's core functionality and integration patterns.
+
+```
+
 ## Quick Start
 
 ### 0. Start the Test FIX Server
