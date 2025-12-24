@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns="http://www.mulesoft.org/schema/mule/core"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xmlns:fix="http://www.mulesoft.org/schema/mule/fix"
+      xmlns:http="http://www.mulesoft.org/schema/mule/http"
+      xsi:schemaLocation="
+        http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+        http://www.mulesoft.org/schema/mule/fix http://www.mulesoft.org/schema/mule/fix/current/mule-fix.xsd
+        http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd">
+
+    <!-- FIX Connector Configuration -->
+    <fix:config name="FIX_Config">
+        <fix:connection 
+            host="localhost" 
+            port="9876" 
+            connectionTimeout="60000"
+            beginString="FIX.4.4"
+            senderCompId="CLIENT1"
+            targetCompId="SERVER1"
+            heartbeatInterval="30"
+            resetSequenceOnLogon="false"
+            validateChecksum="false" />
+    </fix:config>
+
+    <!-- HTTP Listener Configuration -->
+    <http:listener-config name="HTTP_Listener_config">
+        <http:listener-connection host="0.0.0.0" port="8081" />
+    </http:listener-config>
+
+    <!-- Flow 1: Send FIX Message via HTTP API -->
+    <flow name="send-fix-message-flow">
+        <http:listener config-ref="HTTP_Listener_config" path="/fix/send" allowedMethods="POST">
+            <http:response statusCode="200">
+                <http:body><![CDATA[#[output application/json --- payload]]]></http:body>
+            </http:response>
+        </http:listener>
+        
+        <logger level="INFO" message="Received request to send FIX message: #[payload]" />
+        
+        <fix:send-message config-ref="FIX_Config" msgType="#[payload.msgType]" fields="#[write(payload.fields, 'application/json')]" />
+        
+        <logger level="INFO" message="FIX message sent successfully: #[payload]" />
+    </flow>
+
+    <!-- Flow 2: Send Heartbeat -->
+    <flow name="send-heartbeat-flow">
+        <http:listener config-ref="HTTP_Listener_config" path="/fix/heartbeat" allowedMethods="POST" />
+        
+        <logger level="INFO" message="Sending FIX Heartbeat" />
+        
+        <fix:send-heartbeat config-ref="FIX_Config" testReqId="#[payload.testReqId default '']" />
+        
+        <logger level="INFO" message="Heartbeat sent: #[payload]" />
+    </flow>
+
+    <!-- Flow 3: Send Test Request -->
+    <flow name="send-test-request-flow">
+        <http:listener config-ref="HTTP_Listener_config" path="/fix/test-request" allowedMethods="POST" />
+        
+        <logger level="INFO" message="Sending FIX Test Request" />
+        
+        <fix:send-test-request config-ref="FIX_Config" testReqId="#[payload.testReqId default ('TEST-' ++ now())]" />
+        
+        <logger level="INFO" message="Test Request sent: #[payload]" />
+    </flow>
+
+    <!-- Flow 4: Request Resend -->
+    <flow name="request-resend-flow">
+        <http:listener config-ref="HTTP_Listener_config" path="/fix/resend" allowedMethods="POST" />
+        
+        <logger level="INFO" message="Requesting message resend" />
+        
+        <fix:request-resend config-ref="FIX_Config" 
+                           beginSeqNo="#[payload.beginSeqNo]" 
+                           endSeqNo="#[payload.endSeqNo default 0]" />
+        
+        <logger level="INFO" message="Resend request sent: #[payload]" />
+    </flow>
+
+    <!-- Flow 5: Get Session Info -->
+    <flow name="get-session-info-flow">
+        <http:listener config-ref="HTTP_Listener_config" path="/fix/session" allowedMethods="GET" />
+        
+        <fix:get-session-info config-ref="FIX_Config" />
+        
+        <logger level="INFO" message="Session info retrieved: #[payload]" />
+    </flow>
+
+    <!-- Flow 6: Reset Sequence Numbers -->
+    <flow name="reset-sequence-flow">
+        <http:listener config-ref="HTTP_Listener_config" path="/fix/reset-sequence" allowedMethods="POST" />
+        
+        <logger level="WARN" message="Resetting sequence numbers" />
+        
+        <fix:reset-sequence-numbers config-ref="FIX_Config" />
+        
+        <logger level="INFO" message="Sequence numbers reset: #[payload]" />
+    </flow>
+
+    <!-- Flow 7: Listen for Incoming FIX Messages -->
+    <flow name="fix-message-listener-flow">
+        <fix:listener config-ref="FIX_Config" messageTypeFilter="ALL" includeAdminMessages="false" />
+        
+        <logger level="INFO" message="Received FIX message: Type=#[payload.messageType], SeqNum=#[payload.seqNum]" />
+        
+        <!-- Process the message based on type -->
+        <choice>
+            <when expression="#[payload.messageType == 'D']">
+                <logger level="INFO" message="Processing New Order Single" />
+                <!-- Add your business logic here -->
+            </when>
+            <when expression="#[payload.messageType == '8']">
+                <logger level="INFO" message="Processing Execution Report" />
+                <!-- Add your business logic here -->
+            </when>
+            <otherwise>
+                <logger level="INFO" message="Processing message type: #[payload.messageType]" />
+                <!-- Add your business logic here -->
+            </otherwise>
+        </choice>
+        
+        <!-- Store message in database, send to queue, etc. -->
+        <logger level="INFO" message="Message fields: #[payload.fields]" />
+    </flow>
+
+    <!-- Flow 8: Example - Send New Order Single (FIX Message Type D) -->
+    <flow name="send-new-order-flow">
+        <http:listener config-ref="HTTP_Listener_config" path="/fix/order/new" allowedMethods="POST" />
+        
+        <logger level="INFO" message="Sending New Order Single" />
+        
+        <set-variable variableName="orderFields" value="#[{
+            '11': payload.clOrdID,
+            '21': '1',
+            '40': payload.ordType default '2',
+            '54': payload.side,
+            '55': payload.symbol,
+            '38': payload.orderQty,
+            '44': payload.price,
+            '59': payload.timeInForce default '0',
+            '60': now() as String {format: 'yyyyMMdd-HH:mm:ss.SSS'}
+        }]" />
+        
+        <fix:send-message config-ref="FIX_Config" msgType="D" fields='11=ORDER123,55=AAPL,54=1,38=100,40=2,44=150.50,60=#[now() as String {format: "yyyyMMdd-HH:mm:ss.SSS"}]' />
+        
+        <logger level="INFO" message="New Order Single sent: #[payload]" />
+    </flow>
+
+</mule>
+

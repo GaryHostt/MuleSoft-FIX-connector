@@ -1,0 +1,717 @@
+{
+	"info": {
+		"_postman_id": "fix-connector-test-collection",
+		"name": "FIX Protocol Connector - Test Collection",
+		"description": "Comprehensive test collection for the MuleSoft FIX Protocol Connector. Tests all operations including session management, order submission, and protocol features.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Session Management",
+			"item": [
+				{
+					"name": "Get Session Info",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Session is logged in\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.status).to.eql(\"LOGGED_IN\");",
+									"});",
+									"",
+									"pm.test(\"Session has correct CompIDs\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.senderCompId).to.eql(\"CLIENT1\");",
+									"    pm.expect(jsonData.targetCompId).to.eql(\"SERVER1\");",
+									"});",
+									"",
+									"pm.test(\"Sequence numbers are valid\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.incomingSeqNum).to.be.above(0);",
+									"    pm.expect(jsonData.outgoingSeqNum).to.be.above(0);",
+									"});",
+									"",
+									"// Save sequence numbers for later tests",
+									"if (pm.response.json().outgoingSeqNum) {",
+									"    pm.environment.set(\"lastSeqNum\", pm.response.json().outgoingSeqNum);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/fix/session",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"fix",
+								"session"
+							]
+						},
+						"description": "Retrieves current FIX session information including status, sequence numbers, and connection details."
+					},
+					"response": []
+				},
+				{
+					"name": "Reset Sequence Numbers",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Reset successful\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.be.true;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/fix/reset-sequence",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"fix",
+								"reset-sequence"
+							]
+						},
+						"description": "Resets both incoming and outgoing sequence numbers to 1. Use with caution."
+					},
+					"response": []
+				}
+			],
+			"description": "Operations for managing FIX session state and information"
+		},
+		{
+			"name": "Heartbeat & Connection",
+			"item": [
+				{
+					"name": "Send Heartbeat",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Heartbeat sent successfully\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.be.true;",
+									"    pm.expect(jsonData.msgType).to.eql(\"0\");",
+									"});",
+									"",
+									"pm.test(\"Sequence number incremented\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.seqNum).to.be.above(0);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/fix/heartbeat",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"fix",
+								"heartbeat"
+							]
+						},
+						"description": "Sends a FIX Heartbeat message (MsgType 0) to keep the connection alive."
+					},
+					"response": []
+				},
+				{
+					"name": "Send Heartbeat with TestReqID",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Heartbeat sent with TestReqID\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.be.true;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"testReqId\": \"TEST-POSTMAN-001\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/fix/heartbeat",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"fix",
+								"heartbeat"
+							]
+						},
+						"description": "Sends a Heartbeat in response to a TestRequest, including the TestReqID."
+					},
+					"response": []
+				},
+				{
+					"name": "Send Test Request",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Test Request sent\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.be.true;",
+									"    pm.expect(jsonData.msgType).to.eql(\"1\");",
+									"    pm.expect(jsonData.testReqId).to.exist;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"testReqId\": \"POSTMAN-TEST-{{$timestamp}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/fix/test-request",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"fix",
+								"test-request"
+							]
+						},
+						"description": "Sends a TestRequest (MsgType 1) to validate connection health. Server should respond with Heartbeat."
+					},
+					"response": []
+				}
+			],
+			"description": "Operations for connection health monitoring and heartbeat management"
+		},
+		{
+			"name": "Order Management",
+			"item": [
+				{
+					"name": "Send New Order - Market Buy EUR/USD",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Order sent successfully\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.be.true;",
+									"    pm.expect(jsonData.msgType).to.eql(\"D\");",
+									"});",
+									"",
+									"pm.test(\"Has sequence number\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.seqNum).to.be.above(0);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"clOrdID\": \"ORD-POSTMAN-001\",\n    \"side\": \"1\",\n    \"symbol\": \"EUR/USD\",\n    \"orderQty\": \"1000000\",\n    \"price\": \"1.1850\",\n    \"ordType\": \"2\",\n    \"timeInForce\": \"0\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/fix/order/new",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"fix",
+								"order",
+								"new"
+							]
+						},
+						"description": "Sends a NewOrderSingle (MsgType D) - Buy 1M EUR/USD at 1.1850"
+					},
+					"response": []
+				},
+				{
+					"name": "Send New Order - Market Sell GBP/USD",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Order sent successfully\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.be.true;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"clOrdID\": \"ORD-POSTMAN-002\",\n    \"side\": \"2\",\n    \"symbol\": \"GBP/USD\",\n    \"orderQty\": \"500000\",\n    \"price\": \"1.2750\",\n    \"ordType\": \"2\",\n    \"timeInForce\": \"0\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/fix/order/new",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"fix",
+								"order",
+								"new"
+							]
+						},
+						"description": "Sends a NewOrderSingle (MsgType D) - Sell 500K GBP/USD at 1.2750"
+					},
+					"response": []
+				},
+				{
+					"name": "Send New Order - Limit Buy USD/JPY",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Order sent successfully\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.be.true;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"clOrdID\": \"ORD-POSTMAN-003\",\n    \"side\": \"1\",\n    \"symbol\": \"USD/JPY\",\n    \"orderQty\": \"2000000\",\n    \"price\": \"110.50\",\n    \"ordType\": \"2\",\n    \"timeInForce\": \"1\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/fix/order/new",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"fix",
+								"order",
+								"new"
+							]
+						},
+						"description": "Sends a NewOrderSingle (MsgType D) - Buy 2M USD/JPY at 110.50 (GTC)"
+					},
+					"response": []
+				}
+			],
+			"description": "Operations for submitting trading orders"
+		},
+		{
+			"name": "Custom FIX Messages",
+			"item": [
+				{
+					"name": "Send Custom FIX Message - NewOrderSingle",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Custom message sent\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.be.true;",
+									"    pm.expect(jsonData.msgType).to.eql(\"D\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"msgType\": \"D\",\n    \"fields\": {\n        \"11\": \"CUSTOM-ORD-001\",\n        \"21\": \"1\",\n        \"55\": \"EUR/GBP\",\n        \"54\": \"1\",\n        \"38\": \"750000\",\n        \"44\": \"0.8550\",\n        \"40\": \"2\",\n        \"59\": \"0\",\n        \"60\": \"20251223-16:00:00.000\"\n    }\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/fix/send",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"fix",
+								"send"
+							]
+						},
+						"description": "Sends a custom FIX message with manually specified fields (NewOrderSingle example)"
+					},
+					"response": []
+				},
+				{
+					"name": "Send Custom FIX Message - With All Tags",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Custom message sent\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.be.true;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"msgType\": \"D\",\n    \"fields\": {\n        \"11\": \"CUSTOM-ORD-002\",\n        \"1\": \"ACCOUNT123\",\n        \"21\": \"1\",\n        \"55\": \"AUD/USD\",\n        \"54\": \"2\",\n        \"38\": \"1500000\",\n        \"40\": \"1\",\n        \"44\": \"0.7250\",\n        \"59\": \"3\",\n        \"100\": \"XLON\",\n        \"60\": \"20251223-16:30:00.000\"\n    }\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/fix/send",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"fix",
+								"send"
+							]
+						},
+						"description": "Sends a custom FIX message with additional optional fields"
+					},
+					"response": []
+				}
+			],
+			"description": "Operations for sending custom FIX messages with manual field specification"
+		},
+		{
+			"name": "Gap Recovery",
+			"item": [
+				{
+					"name": "Request Message Resend",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Resend request sent\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.be.true;",
+									"    pm.expect(jsonData.msgType).to.eql(\"2\");",
+									"});",
+									"",
+									"pm.test(\"Sequence range specified\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.beginSeqNo).to.exist;",
+									"    pm.expect(jsonData.endSeqNo).to.exist;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"beginSeqNo\": 1,\n    \"endSeqNo\": 5\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/fix/resend",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"fix",
+								"resend"
+							]
+						},
+						"description": "Sends a ResendRequest (MsgType 2) to request retransmission of messages 1-5"
+					},
+					"response": []
+				},
+				{
+					"name": "Request Resend All Missing",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Resend request sent\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.be.true;",
+									"    pm.expect(jsonData.endSeqNo).to.eql(0);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"beginSeqNo\": 10,\n    \"endSeqNo\": 0\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/fix/resend",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"fix",
+								"resend"
+							]
+						},
+						"description": "Sends ResendRequest from sequence 10 to infinity (endSeqNo=0 means all remaining)"
+					},
+					"response": []
+				}
+			],
+			"description": "Operations for gap detection and message recovery"
+		},
+		{
+			"name": "Load Testing",
+			"item": [
+				{
+					"name": "Send Multiple Orders (Batch)",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// Generate unique order ID",
+									"pm.environment.set(\"orderId\", \"BATCH-\" + Date.now());"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Order sent successfully\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.be.true;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"clOrdID\": \"{{orderId}}\",\n    \"side\": \"{{$randomInt}}\",\n    \"symbol\": \"EUR/USD\",\n    \"orderQty\": \"{{$randomInt}}\",\n    \"price\": \"1.{{$randomInt}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/fix/order/new",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"fix",
+								"order",
+								"new"
+							]
+						},
+						"description": "Use Postman Runner to send multiple orders rapidly for load testing"
+					},
+					"response": []
+				}
+			],
+			"description": "Load testing scenarios - use Collection Runner with iterations"
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8081",
+			"type": "string"
+		}
+	]
+}
+

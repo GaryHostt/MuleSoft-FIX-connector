@@ -1,0 +1,12 @@
+Manifest-Version: 1.0
+Created-By: Maven JAR Plugin 3.4.1
+Build-Jdk-Spec: 17
+Specification-Title: FIX Protocol Connector
+Specification-Version: 1.0
+Specification-Vendor: MuleSoft, Inc.
+Implementation-Title: FIX Protocol Connector
+Implementation-Version: 1.0.0
+Implementation-Vendor: MuleSoft, Inc.
+Build-Date: 2025-12-24-14:02:01
+Target-Java-Release-Version: 17
+

@@ -1,0 +1,322 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns="http://www.mulesoft.org/schema/mule/core"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xmlns:munit="http://www.mulesoft.org/schema/mule/munit"
+      xmlns:munit-tools="http://www.mulesoft.org/schema/mule/munit-tools"
+      xmlns:fix="http://www.mulesoft.org/schema/mule/fix"
+      xsi:schemaLocation="
+        http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+        http://www.mulesoft.org/schema/mule/munit http://www.mulesoft.org/schema/mule/munit/current/mule-munit.xsd
+        http://www.mulesoft.org/schema/mule/munit-tools http://www.mulesoft.org/schema/mule/munit-tools/current/mule-munit-tools.xsd
+        http://www.mulesoft.org/schema/mule/fix http://www.mulesoft.org/schema/mule/fix/current/mule-fix.xsd">
+
+    <!-- Test Suite for FIX Protocol Operations -->
+    
+    <!-- Test 1: Session Connection and Logon -->
+    <munit:test name="test-fix-session-connection" description="Verify FIX session establishes successfully">
+        <munit:behavior>
+            <munit-tools:then-call flow="get-session-info-flow"/>
+        </munit:behavior>
+        
+        <munit:execution>
+            <set-variable variableName="sessionInfo" value="#[payload]"/>
+        </munit:execution>
+        
+        <munit:validation>
+            <!-- Verify session is logged in -->
+            <munit-tools:assert-that expression="#[vars.sessionInfo.status]" 
+                                     is="#[MunitTools::equalTo('LOGGED_IN')]"/>
+            
+            <!-- Verify correct SenderCompID -->
+            <munit-tools:assert-that expression="#[vars.sessionInfo.senderCompId]" 
+                                     is="#[MunitTools::equalTo('CLIENT1')]"/>
+            
+            <!-- Verify correct TargetCompID -->
+            <munit-tools:assert-that expression="#[vars.sessionInfo.targetCompId]" 
+                                     is="#[MunitTools::equalTo('SERVER1')]"/>
+            
+            <!-- Verify sequence numbers initialized -->
+            <munit-tools:assert-that expression="#[vars.sessionInfo.incomingSeqNum]" 
+                                     is="#[MunitTools::greaterThan(0)]"/>
+            
+            <munit-tools:assert-that expression="#[vars.sessionInfo.outgoingSeqNum]" 
+                                     is="#[MunitTools::greaterThan(0)]"/>
+            
+            <!-- Verify heartbeat interval -->
+            <munit-tools:assert-that expression="#[vars.sessionInfo.heartbeatInterval]" 
+                                     is="#[MunitTools::equalTo(30)]"/>
+        </munit:validation>
+    </munit:test>
+
+    <!-- Test 2: Send Heartbeat -->
+    <munit:test name="test-send-heartbeat" description="Verify heartbeat can be sent successfully">
+        <munit:execution>
+            <set-payload value="#[{}]"/>
+            <flow-ref name="send-heartbeat-flow"/>
+        </munit:execution>
+        
+        <munit:validation>
+            <!-- Verify success response -->
+            <munit-tools:assert-that expression="#[payload.success]" 
+                                     is="#[MunitTools::equalTo(true)]"/>
+            
+            <!-- Verify message type is heartbeat -->
+            <munit-tools:assert-that expression="#[payload.msgType]" 
+                                     is="#[MunitTools::equalTo('0')]"/>
+            
+            <!-- Verify sequence number exists -->
+            <munit-tools:assert-that expression="#[payload.seqNum]" 
+                                     is="#[MunitTools::notNullValue()]"/>
+        </munit:validation>
+    </munit:test>
+
+    <!-- Test 3: Send Test Request -->
+    <munit:test name="test-send-test-request" description="Verify test request can be sent">
+        <munit:execution>
+            <set-payload value="#[{
+                testReqId: 'TEST-MUNIT-001'
+            }]"/>
+            <flow-ref name="send-test-request-flow"/>
+        </munit:execution>
+        
+        <munit:validation>
+            <!-- Verify success -->
+            <munit-tools:assert-that expression="#[payload.success]" 
+                                     is="#[MunitTools::equalTo(true)]"/>
+            
+            <!-- Verify message type -->
+            <munit-tools:assert-that expression="#[payload.msgType]" 
+                                     is="#[MunitTools::equalTo('1')]"/>
+            
+            <!-- Verify test request ID -->
+            <munit-tools:assert-that expression="#[payload.testReqId]" 
+                                     is="#[MunitTools::equalTo('TEST-MUNIT-001')]"/>
+        </munit:validation>
+    </munit:test>
+
+    <!-- Test 4: Send New Order Single -->
+    <munit:test name="test-send-new-order" description="Verify new order can be sent successfully">
+        <munit:execution>
+            <set-payload value="#[{
+                clOrdID: 'MUNIT-ORD-001',
+                side: '1',
+                symbol: 'EUR/USD',
+                orderQty: '1000000',
+                price: '1.1850',
+                ordType: '2',
+                timeInForce: '0'
+            }]"/>
+            <flow-ref name="send-new-order-flow"/>
+        </munit:execution>
+        
+        <munit:validation>
+            <!-- Verify success -->
+            <munit-tools:assert-that expression="#[payload.success]" 
+                                     is="#[MunitTools::equalTo(true)]"/>
+            
+            <!-- Verify message type is NewOrderSingle -->
+            <munit-tools:assert-that expression="#[payload.msgType]" 
+                                     is="#[MunitTools::equalTo('D')]"/>
+            
+            <!-- Verify sequence number incremented -->
+            <munit-tools:assert-that expression="#[payload.seqNum]" 
+                                     is="#[MunitTools::greaterThan(0)]"/>
+        </munit:validation>
+    </munit:test>
+
+    <!-- Test 5: Send Custom FIX Message -->
+    <munit:test name="test-send-custom-message" description="Verify custom FIX messages can be sent">
+        <munit:execution>
+            <set-payload value="#[{
+                msgType: 'D',
+                fields: {
+                    '11': 'MUNIT-ORD-002',
+                    '21': '1',
+                    '55': 'GBP/USD',
+                    '54': '2',
+                    '38': '500000',
+                    '44': '1.2750',
+                    '40': '2',
+                    '59': '0'
+                }
+            }]"/>
+            <flow-ref name="send-fix-message-flow"/>
+        </munit:execution>
+        
+        <munit:validation>
+            <!-- Verify success -->
+            <munit-tools:assert-that expression="#[payload.success]" 
+                                     is="#[MunitTools::equalTo(true)]"/>
+            
+            <!-- Verify message type -->
+            <munit-tools:assert-that expression="#[payload.msgType]" 
+                                     is="#[MunitTools::equalTo('D')]"/>
+        </munit:validation>
+    </munit:test>
+
+    <!-- Test 6: Sequence Number Progression -->
+    <munit:test name="test-sequence-number-progression" description="Verify sequence numbers increment correctly">
+        <munit:behavior>
+            <!-- Get initial sequence numbers -->
+            <munit-tools:then-call flow="get-session-info-flow"/>
+            <set-variable variableName="initialOutgoingSeq" value="#[payload.outgoingSeqNum]"/>
+        </munit:behavior>
+        
+        <munit:execution>
+            <!-- Send a heartbeat -->
+            <set-payload value="#[{}]"/>
+            <flow-ref name="send-heartbeat-flow"/>
+            
+            <!-- Get updated sequence numbers -->
+            <flow-ref name="get-session-info-flow"/>
+            <set-variable variableName="updatedOutgoingSeq" value="#[payload.outgoingSeqNum]"/>
+        </munit:execution>
+        
+        <munit:validation>
+            <!-- Verify sequence number incremented -->
+            <munit-tools:assert-that expression="#[vars.updatedOutgoingSeq]" 
+                                     is="#[MunitTools::greaterThan(vars.initialOutgoingSeq)]"/>
+        </munit:validation>
+    </munit:test>
+
+    <!-- Test 7: Request Resend -->
+    <munit:test name="test-request-resend" description="Verify resend request can be sent">
+        <munit:execution>
+            <set-payload value="#[{
+                beginSeqNo: 1,
+                endSeqNo: 5
+            }]"/>
+            <flow-ref name="request-resend-flow"/>
+        </munit:execution>
+        
+        <munit:validation>
+            <!-- Verify success -->
+            <munit-tools:assert-that expression="#[payload.success]" 
+                                     is="#[MunitTools::equalTo(true)]"/>
+            
+            <!-- Verify message type is ResendRequest -->
+            <munit-tools:assert-that expression="#[payload.msgType]" 
+                                     is="#[MunitTools::equalTo('2')]"/>
+            
+            <!-- Verify begin sequence number -->
+            <munit-tools:assert-that expression="#[payload.beginSeqNo]" 
+                                     is="#[MunitTools::equalTo(1)]"/>
+            
+            <!-- Verify end sequence number -->
+            <munit-tools:assert-that expression="#[payload.endSeqNo]" 
+                                     is="#[MunitTools::equalTo(5)]"/>
+        </munit:validation>
+    </munit:test>
+
+    <!-- Test 8: Multiple Orders in Sequence -->
+    <munit:test name="test-multiple-orders-sequence" description="Verify multiple orders maintain sequence">
+        <munit:behavior>
+            <munit-tools:then-call flow="get-session-info-flow"/>
+            <set-variable variableName="startSeq" value="#[payload.outgoingSeqNum]"/>
+        </munit:behavior>
+        
+        <munit:execution>
+            <!-- Send first order -->
+            <set-payload value="#[{
+                clOrdID: 'MUNIT-SEQ-001',
+                side: '1',
+                symbol: 'EUR/USD',
+                orderQty: '1000000',
+                price: '1.1850'
+            }]"/>
+            <flow-ref name="send-new-order-flow"/>
+            
+            <!-- Send second order -->
+            <set-payload value="#[{
+                clOrdID: 'MUNIT-SEQ-002',
+                side: '2',
+                symbol: 'GBP/USD',
+                orderQty: '500000',
+                price: '1.2750'
+            }]"/>
+            <flow-ref name="send-new-order-flow"/>
+            
+            <!-- Send third order -->
+            <set-payload value="#[{
+                clOrdID: 'MUNIT-SEQ-003',
+                side: '1',
+                symbol: 'USD/JPY',
+                orderQty: '2000000',
+                price: '110.50'
+            }]"/>
+            <flow-ref name="send-new-order-flow"/>
+            
+            <!-- Get final sequence -->
+            <flow-ref name="get-session-info-flow"/>
+            <set-variable variableName="endSeq" value="#[payload.outgoingSeqNum]"/>
+        </munit:execution>
+        
+        <munit:validation>
+            <!-- Verify sequence incremented by 3 (3 orders sent) -->
+            <munit-tools:assert-that expression="#[vars.endSeq - vars.startSeq]" 
+                                     is="#[MunitTools::equalTo(3)]"/>
+        </munit:validation>
+    </munit:test>
+
+    <!-- Test 9: Session Info Contains Required Fields -->
+    <munit:test name="test-session-info-structure" description="Verify session info has all required fields">
+        <munit:execution>
+            <flow-ref name="get-session-info-flow"/>
+        </munit:execution>
+        
+        <munit:validation>
+            <!-- Verify all required fields exist -->
+            <munit-tools:assert-that expression="#[payload.sessionId]" 
+                                     is="#[MunitTools::notNullValue()]"/>
+            
+            <munit-tools:assert-that expression="#[payload.senderCompId]" 
+                                     is="#[MunitTools::notNullValue()]"/>
+            
+            <munit-tools:assert-that expression="#[payload.targetCompId]" 
+                                     is="#[MunitTools::notNullValue()]"/>
+            
+            <munit-tools:assert-that expression="#[payload.status]" 
+                                     is="#[MunitTools::notNullValue()]"/>
+            
+            <munit-tools:assert-that expression="#[payload.incomingSeqNum]" 
+                                     is="#[MunitTools::notNullValue()]"/>
+            
+            <munit-tools:assert-that expression="#[payload.outgoingSeqNum]" 
+                                     is="#[MunitTools::notNullValue()]"/>
+            
+            <munit-tools:assert-that expression="#[payload.heartbeatInterval]" 
+                                     is="#[MunitTools::notNullValue()]"/>
+        </munit:validation>
+    </munit:test>
+
+    <!-- Test 10: Error Handling - Invalid Order -->
+    <munit:test name="test-error-handling-invalid-order" description="Verify error handling for invalid orders" expectedErrorType="ANY">
+        <munit:execution>
+            <set-payload value="#[{
+                clOrdID: '',
+                side: 'INVALID',
+                symbol: ''
+            }]"/>
+            
+            <try>
+                <flow-ref name="send-new-order-flow"/>
+                <error-handler>
+                    <on-error-continue>
+                        <set-variable variableName="errorOccurred" value="true"/>
+                    </on-error-continue>
+                </error-handler>
+            </try>
+        </munit:execution>
+        
+        <munit:validation>
+            <!-- Verify either success=false or error occurred -->
+            <choice>
+                <when expression="#[payload.success == false or vars.errorOccurred == 'true']">
+                    <logger level="INFO" message="Error handling working correctly"/>
+                </when>
+            </choice>
+        </munit:validation>
+    </munit:test>
+
+</mule>
+

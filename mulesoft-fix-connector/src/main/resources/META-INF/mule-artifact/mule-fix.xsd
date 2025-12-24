@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns="http://www.mulesoft.org/schema/mule/fix"
+            xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+            xmlns:mule="http://www.mulesoft.org/schema/mule/core"
+            targetNamespace="http://www.mulesoft.org/schema/mule/fix"
+            elementFormDefault="qualified"
+            attributeFormDefault="unqualified">
+
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace"/>
+    <xsd:import namespace="http://www.springframework.org/schema/beans"
+                schemaLocation="http://www.springframework.org/schema/beans/spring-beans.xsd"/>
+    <xsd:import namespace="http://www.mulesoft.org/schema/mule/core"
+                schemaLocation="http://www.mulesoft.org/schema/mule/core/current/mule.xsd"/>
+
+    <!-- Config -->
+    <xsd:element name="config" type="ConfigType" substitutionGroup="mule:abstract-extension"/>
+    
+    <xsd:complexType name="ConfigType">
+        <xsd:complexContent>
+            <xsd:extension base="mule:abstractExtensionType">
+                <xsd:sequence>
+                    <xsd:element name="connection" type="ConnectionType" minOccurs="0" maxOccurs="1"/>
+                    <xsd:element name="begin-string" type="xsd:string" minOccurs="0" maxOccurs="1"/>
+                    <xsd:element name="sender-comp-id" type="xsd:string" minOccurs="0" maxOccurs="1"/>
+                    <xsd:element name="target-comp-id" type="xsd:string" minOccurs="0" maxOccurs="1"/>
+                    <xsd:element name="heartbeat-interval" type="xsd:string" minOccurs="0" maxOccurs="1"/>
+                    <xsd:element name="reset-sequence-on-logon" type="xsd:string" minOccurs="0" maxOccurs="1"/>
+                    <xsd:element name="validate-checksum" type="xsd:string" minOccurs="0" maxOccurs="1"/>
+                </xsd:sequence>
+                <xsd:attribute name="name" type="xsd:string" use="required"/>
+            </xsd:extension>
+        </xsd:complexContent>
+    </xsd:complexType>
+
+    <!-- Connection -->
+    <xsd:complexType name="ConnectionType">
+        <xsd:attribute name="host" type="xsd:string" use="required"/>
+        <xsd:attribute name="port" type="xsd:string" use="required"/>
+        <xsd:attribute name="connectionTimeout" type="xsd:string" use="optional"/>
+    </xsd:complexType>
+
+    <!-- Operations -->
+    <xsd:element name="send-message" type="SendMessageType" substitutionGroup="mule:abstract-operator"/>
+    <xsd:element name="send-heartbeat" type="SendHeartbeatType" substitutionGroup="mule:abstract-operator"/>
+    <xsd:element name="send-test-request" type="SendTestRequestType" substitutionGroup="mule:abstract-operator"/>
+    <xsd:element name="request-resend" type="RequestResendType" substitutionGroup="mule:abstract-operator"/>
+    <xsd:element name="get-session-info" type="GetSessionInfoType" substitutionGroup="mule:abstract-operator"/>
+    <xsd:element name="reset-sequence-numbers" type="ResetSequenceNumbersType" substitutionGroup="mule:abstract-operator"/>
+
+    <xsd:complexType name="SendMessageType">
+        <xsd:complexContent>
+            <xsd:extension base="mule:abstractOperatorType">
+                <xsd:sequence>
+                    <xsd:element name="msg-type" type="xsd:string" minOccurs="0" maxOccurs="1"/>
+                    <xsd:element name="fields" type="xsd:string" minOccurs="0" maxOccurs="1"/>
+                </xsd:sequence>
+                <xsd:attribute name="config-ref" type="xsd:string" use="required"/>
+            </xsd:extension>
+        </xsd:complexContent>
+    </xsd:complexType>
+
+    <xsd:complexType name="SendHeartbeatType">
+        <xsd:complexContent>
+            <xsd:extension base="mule:abstractOperatorType">
+                <xsd:attribute name="config-ref" type="xsd:string" use="required"/>
+                <xsd:attribute name="testReqId" type="xsd:string" use="optional"/>
+            </xsd:extension>
+        </xsd:complexContent>
+    </xsd:complexType>
+
+    <xsd:complexType name="SendTestRequestType">
+        <xsd:complexContent>
+            <xsd:extension base="mule:abstractOperatorType">
+                <xsd:attribute name="config-ref" type="xsd:string" use="required"/>
+                <xsd:attribute name="testReqId" type="xsd:string" use="required"/>
+            </xsd:extension>
+        </xsd:complexContent>
+    </xsd:complexType>
+
+    <xsd:complexType name="RequestResendType">
+        <xsd:complexContent>
+            <xsd:extension base="mule:abstractOperatorType">
+                <xsd:attribute name="config-ref" type="xsd:string" use="required"/>
+                <xsd:attribute name="beginSeqNo" type="xsd:string" use="required"/>
+                <xsd:attribute name="endSeqNo" type="xsd:string" use="required"/>
+            </xsd:extension>
+        </xsd:complexContent>
+    </xsd:complexType>
+
+    <xsd:complexType name="GetSessionInfoType">
+        <xsd:complexContent>
+            <xsd:extension base="mule:abstractOperatorType">
+                <xsd:attribute name="config-ref" type="xsd:string" use="required"/>
+            </xsd:extension>
+        </xsd:complexContent>
+    </xsd:complexType>
+
+    <xsd:complexType name="ResetSequenceNumbersType">
+        <xsd:complexContent>
+            <xsd:extension base="mule:abstractOperatorType">
+                <xsd:attribute name="config-ref" type="xsd:string" use="required"/>
+            </xsd:extension>
+        </xsd:complexContent>
+    </xsd:complexType>
+
+    <!-- Message Source -->
+    <xsd:element name="listener" type="MessageListenerType" substitutionGroup="mule:abstract-message-source"/>
+    
+    <xsd:complexType name="MessageListenerType">
+        <xsd:complexContent>
+            <xsd:extension base="mule:abstractMessageSourceType">
+                <xsd:attribute name="config-ref" type="xsd:string" use="required"/>
+                <xsd:attribute name="messageTypeFilter" type="xsd:string" use="optional"/>
+                <xsd:attribute name="includeAdminMessages" type="xsd:string" use="optional"/>
+            </xsd:extension>
+        </xsd:complexContent>
+    </xsd:complexType>
+
+</xsd:schema>
