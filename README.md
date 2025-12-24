@@ -28,60 +28,133 @@ fix-connector/
     └── README.md                      # Server documentation
 ```
 
-## ⚠️ Important: Test FIX Server Limitations
-
-The included FIX server (`fix-server-go`) is a **proof-of-concept for testing only** and is not production-ready.
-
-### What Works (Testing Capabilities)
-- ✅ Standard handshaking (Logon/Logout with HeartbeatInterval negotiation)
-- ✅ Basic session management and heartbeat monitoring
-- ✅ Checksum calculation and SOH delimiter parsing
-- ✅ Application logic (NewOrderSingle and ExecutionReport simulation)
-- ✅ Thread-safe sequence number management
-
-### Critical Production Gaps
-- ❌ **No Resend Management**: Server only logs sequence mismatches instead of sending ResendRequest (2) messages
-- ❌ **No Message Persistence**: Cannot fulfill ResendRequest from clients for historical messages
-- ❌ **No Dictionary Validation**: Accepts any FIX tags without FIX specification validation
-- ❌ **No Gap-Fill Logic**: Missing SequenceReset (4) handling for sequence recovery
-- ❌ **Checksum Issues**: Checksum validation disabled in sample app (`validateChecksum="false"`) due to server calculation issues
-
-### Recommendation
-**For Production Use:**
-- Deploy a production FIX engine (QuickFIX, FIX8, or commercial vendor solution)
-- Ensure proper sequence recovery, message persistence, and error handling
-- Enable checksum validation and full FIX protocol compliance
-
-**For Testing:**
-This server is sufficient to validate the connector's core functionality and integration patterns.
-
-```
-
 ## Quick Start
 
-### 0. Start the Test FIX Server
+### Prerequisites
+
+- **Java 17** installed and configured as JAVA_HOME
+- **Apache Maven 3.6+** installed
+- **Anypoint Studio 7.12+** (or latest)
+- **Python 3.7+** (for test FIX server)
+
+### Step 0: Start the Test FIX Server
+
+Before running the sample application, start the test FIX server:
 
 ```bash
 cd fix-server-go
 python3 fix_server.py
 ```
 
-The server will start on port **9876** and wait for connections. See `fix-server-go/README.md` for details.
+The server will start on **localhost:9876** and display:
+```
+FIX Server started on localhost:9876
+Waiting for connections...
+```
 
-### 1. Build the Connector
+Leave this terminal running. See `fix-server-go/README.md` for details.
+
+### Step 1: Build and Install the Connector Locally
+
+The connector must be built and installed to your local Maven repository before it can be used in the sample application.
 
 ```bash
 cd mulesoft-fix-connector
 mvn clean install
 ```
 
-### 2. Run Sample Application
+This will:
+1. Compile the connector source code
+2. Generate the connector's XML schema (XSD)
+3. Package the connector as a JAR file
+4. Install it to `~/.m2/repository/org/mule/extension/mulesoft-fix-connector/1.0.0/`
 
-Open the project in Anypoint Studio and run `fix-sample-app` as a Mule Application.
+**Expected output:**
+```
+[INFO] BUILD SUCCESS
+[INFO] Installing .../mulesoft-fix-connector-1.0.0.jar to ~/.m2/repository/...
+```
 
-See `RUN_APP_QUICK_START.md` for detailed instructions.
+**Note:** After making changes to the connector code, you must run `mvn clean install` again and restart Anypoint Studio for changes to take effect.
 
-### 3. Test the Connector
+### Step 2: Import the Sample Application into Anypoint Studio
+
+1. **Open Anypoint Studio**
+
+2. **Import the Project:**
+   - Go to **File** > **Import...**
+   - Select **Anypoint Studio** > **Packaged mule application (.jar)**
+   - Click **Next**
+
+3. **Select the Project:**
+   - Click **Browse** and navigate to: `/Users/alex.macdonald/fix-connector/fix-sample-app`
+   - Select the `fix-sample-app` folder
+   - Click **Open**, then **Finish**
+
+4. **Wait for Dependencies to Download:**
+   - Studio will automatically download all dependencies from Maven Central and your local repository
+   - This may take 2-5 minutes on first import
+   - Watch the progress in the bottom-right corner
+
+5. **Verify the Connector is Loaded:**
+   - Open the **Mule Palette** (right side of Studio)
+   - Search for "FIX"
+   - You should see the **FIX Connector** with operations like:
+     - Send Message
+     - Send Heartbeat
+     - Send Logout
+     - Get Session Info
+     - Request Resend
+
+**Troubleshooting Import Issues:**
+- If the connector doesn't appear, go to **Project** > **Clean...** and clean the project
+- If you see XSD validation errors, restart Anypoint Studio
+- If dependencies fail to download, check your internet connection and Maven settings
+
+### Step 3: Run the Sample Application in Anypoint Studio
+
+1. **Open the Mule Configuration:**
+   - In the **Package Explorer**, expand `fix-sample-app` > `src/main/mule`
+   - Double-click `fix-sample-app.xml`
+
+2. **Verify the Configuration:**
+   - In the canvas view, click the **Global Elements** tab at the bottom
+   - You should see:
+     - `HTTP_Listener_config` (port 8081)
+     - `FIX_Config` (host: localhost, port: 9876)
+
+3. **Start the Application:**
+   - Right-click on the project `fix-sample-app` in the Package Explorer
+   - Select **Run As** > **Mule Application**
+
+4. **Monitor the Console:**
+   - Watch the **Console** tab at the bottom
+   - You should see logs indicating:
+     ```
+     INFO  FIXConnectionProvider - Connecting to FIX server at localhost:9876
+     INFO  FIXSessionManager - Sending Logon message
+     INFO  FIXSessionManager - Received Logon response - session established
+     INFO  Application started successfully
+     ```
+
+5. **Verify the Connection:**
+   - The FIX server terminal should show:
+     ```
+     New connection from ('127.0.0.1', XXXXX)
+     Received Logon from CLIENT1 to SERVER1
+     Sent Logon response
+     ```
+
+**Troubleshooting Run Issues:**
+- **Connection timeout:** Ensure the FIX server is running on port 9876
+- **Port 8081 already in use:** Change the HTTP port in `fix-sample-app.xml`
+- **ClassNotFoundException:** Rebuild the connector with `mvn clean install`
+
+### Step 4: Test the Connector
+
+Once the application is running, test it using **curl** or **Postman**.
+
+#### Quick Test with curl
 
 ```bash
 # Get session info
@@ -104,7 +177,21 @@ curl -X POST http://localhost:8081/fix/order/new \
   }'
 ```
 
-Or use the included **Postman collection** for comprehensive testing. See `POSTMAN_TESTING_GUIDE.md` for details.
+#### Comprehensive Testing with Postman
+
+For a complete test suite with all connector operations, use the included Postman collection:
+
+1. Import `FIX_Connector_Tests.postman_collection.json` into Postman
+2. Run tests in this order:
+   - **Get Session Info** (verify connection)
+   - **Send Heartbeat**
+   - **Send New Order (Single)**
+   - **Send Custom FIX Message (NewOrderSingle)**
+   - **Send Custom Message (All Tags)**
+   - **Request Resend**
+   - **Send Logout**
+
+See `POSTMAN_TESTING_GUIDE.md` for detailed instructions and expected responses.
 
 ## Features
 
@@ -502,4 +589,33 @@ Built following FIX Protocol specifications and MuleSoft SDK best practices. Imp
 ---
 
 **Built with ❤️ for reliable financial messaging integration**
+
+---
+
+## ⚠️ Test FIX Server Limitations
+
+The included FIX server (`fix-server-go`) is a **proof-of-concept for testing only** and is not production-ready.
+
+### What Works (Testing Capabilities)
+- ✅ Standard handshaking (Logon/Logout with HeartbeatInterval negotiation)
+- ✅ Basic session management and heartbeat monitoring
+- ✅ Checksum calculation and SOH delimiter parsing
+- ✅ Application logic (NewOrderSingle and ExecutionReport simulation)
+- ✅ Thread-safe sequence number management
+
+### Critical Production Gaps
+- ❌ **No Resend Management**: Server only logs sequence mismatches instead of sending ResendRequest (2) messages
+- ❌ **No Message Persistence**: Cannot fulfill ResendRequest from clients for historical messages
+- ❌ **No Dictionary Validation**: Accepts any FIX tags without FIX specification validation
+- ❌ **No Gap-Fill Logic**: Missing SequenceReset (4) handling for sequence recovery
+- ❌ **Checksum Issues**: Checksum validation disabled in sample app (`validateChecksum="false"`) due to server calculation issues
+
+### Recommendation
+**For Production Use:**
+- Deploy a production FIX engine (QuickFIX, FIX8, or commercial vendor solution)
+- Ensure proper sequence recovery, message persistence, and error handling
+- Enable checksum validation and full FIX protocol compliance
+
+**For Testing:**
+This server is sufficient to validate the connector's core functionality and integration patterns.
 

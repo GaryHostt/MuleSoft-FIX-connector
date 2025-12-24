@@ -1,1 +1,19 @@
-{"extensionModelLoaderDescriptor":{"id":"java","attributes":{"type":"org.mule.extension.fix.internal.FIXExtension","version":"1.0.0"}},"name":"FIX","minMuleVersion":"4.9.0","requiredProduct":"MULE","classLoaderModelLoaderDescriptor":{"id":"mule","attributes":{"exportedPackages":["org.mule.extension.fix.api","org.mule.extension.fix.internal"]}},"bundleDescriptorLoader":{"id":"mule","attributes":{}},"supportedJavaVersions":["17"]}
+{
+  "minMuleVersion": "4.9.0",
+  "name": "FIX",
+  "type": "extension",
+  "requiredProduct": "MULE",
+  "classLoaderModelLoaderDescriptor": {
+    "id": "mule",
+    "attributes": {
+      "exportedPackages": [
+        "org.mule.extension.fix.api",
+        "org.mule.extension.fix.internal"
+      ]
+    }
+  },
+  "bundleDescriptorLoader": {
+    "id": "mule",
+    "attributes": {}
+  }
+}
