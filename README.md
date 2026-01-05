@@ -1,6 +1,8 @@
 # FIX Protocol Connector Project
 
-Complete MuleSoft connector implementation for the Financial Information eXchange (FIX) Protocol, built for runtime 4.4+ and Java 17.
+![FIX Connector](assets/intro.png)
+
+Complete MuleSoft connector implementation for the Financial Information eXchange (FIX) Protocol, built for Mule runtime 4.9+ and Java 17.
 
 ## Project Structure
 

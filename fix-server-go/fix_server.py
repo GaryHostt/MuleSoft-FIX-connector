@@ -243,7 +243,7 @@ def handle_client(conn, addr):
 
 def main():
     """Main server function"""
-    HOST = '0.0.0.0'
+    HOST = 'localhost'
     PORT = 9876
     
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
