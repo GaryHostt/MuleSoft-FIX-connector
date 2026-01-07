@@ -224,7 +224,7 @@ See `POSTMAN_TESTING_GUIDE.md` for detailed instructions and expected responses.
 ### Requirements
 
 - **Java:** 17
-- **MuleSoft Runtime:** 4.4.0+
+- **MuleSoft Runtime:** 4.9+
 - **Maven:** 3.6+
 - **FIX Server:** Any FIX-compliant server (FIX.4.2, FIX.4.4, FIXT.1.1)
 
