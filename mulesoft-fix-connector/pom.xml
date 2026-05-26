@@ -37,6 +37,18 @@
         </repository>
     </repositories>
 
+    <dependencyManagement>
+      <dependencies>
+	<dependency>
+          <groupId>org.junit</groupId>
+          <artifactId>junit-bom</artifactId>
+          <version>5.10.1</version>
+          <type>pom</type>
+          <scope>import</scope>
+	</dependency>
+      </dependencies>
+    </dependencyManagement>
+
     <pluginRepositories>
         <pluginRepository>
             <id>mulesoft-releases</id>
